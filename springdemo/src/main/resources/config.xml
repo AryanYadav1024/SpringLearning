@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+====================================================================================
+THIS FILE DEFINES METADATA ONLY.
+====================================================================================
+
+It does NOT execute logic.
+It describes:
+
+- What objects to create
+- What dependencies to inject
+- What configuration values to use
+
+Spring reads this file, builds an internal dependency graph,
+and constructs objects accordingly.
+-->
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans-2.0.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!--
+    PROPERTY PLACEHOLDER CONFIGURER
+
+    This registers a special Spring bean:
+    PropertySourcesPlaceholderConfigurer
+
+    It:
+    - Loads car.properties
+    - Stores key-value pairs
+    - Replaces ${...} placeholders in bean definitions
+    BEFORE bean instantiation.
+    -->
+    <context:property-placeholder location="car.properties"/>
+
+
+    <!--
+    CAR BEAN DEFINITION
+
+    id = unique identifier inside container.
+    class = fully qualified class name.
+
+    Spring will:
+    - Load class via reflection.
+    - Find matching constructor.
+    - Instantiate object.
+    - Inject dependencies.
+    -->
+
+    <bean id="car" class="com.aryan.springdemo.vehicles.car" scope="prototype">
+
+        <!--
+        Constructor Injection (MANDATORY DEPENDENCIES)
+
+        If dependency is essential for object to function,
+        we inject via constructor.
+        -->
+
+        <constructor-arg value="mercedes"/>
+        <constructor-arg ref="festivalDiscount"/>
+
+        <!--
+        Setter Injection (CONFIGURATION DEPENDENCIES)
+
+        Spring uses BeanWrapper to:
+        - Find setter method
+        - Invoke it via reflection
+        -->
+
+        <property name="engineType" ref="petrolEngine"/>
+        <property name="brandName" value="${car.brandName}"/>
+        <property name="maxRetailPrice" value="${car.mrp}"/>
+
+    </bean>
+
+
+    <!--
+    BUS BEAN — SECOND IMPLEMENTATION OF vehicle INTERFACE
+
+    Demonstrates:
+    - Multiple beans of same interface.
+    - Dependency graph resolution.
+    -->
+
+    <bean id="myVehicle"
+          class="com.aryan.springdemo.vehicles.bus">
+
+        <constructor-arg value="volvo"/>
+        <constructor-arg ref="festivalDiscount"/>
+
+        <property name="engineType" ref="petrolEngine"/>
+        <property name="brandName" value="volvo"/>
+        <property name="maxRetailPrice" value="${car.mrp}"/>
+
+    </bean>
+
+
+    <!--
+    SHARED DEPENDENCY BEANS
+    -->
+
+    <bean id="festivalDiscount"
+          class="com.aryan.springdemo.vehicles.FestivalDiscount"/>
+
+    <bean id="petrolEngine"
+          class="com.aryan.springdemo.vehicles.PetrolEngine">
+        <constructor-arg value="2.8L"/>
+    </bean>
+
+</beans>
+        <!--
+        ====================================================================================
+        ADDITIONAL NOTES — SCOPE BEHAVIOR + LIFECYCLE FLOW
+        ====================================================================================
+
+        1) BEAN DEFINITION VS BEAN INSTANCE
+
+        When Spring reads this XML:
+
+        It DOES NOT immediately create all objects.
+
+        It creates BeanDefinition objects which contain:
+        - Class metadata
+        - Scope
+        - Constructor args
+        - Property values
+        - Dependency references
+
+        These are stored in beanDefinitionMap.
+
+
+        2) SINGLETON BEANS IN THIS FILE
+
+        Beans that are singleton (default scope):
+        - myVehicle (bus)
+        - festivalDiscount
+        - petrolEngine
+
+        These are created during container initialization.
+
+        They are stored in:
+        singletonObjects cache.
+
+
+        3) PROTOTYPE BEAN IN THIS FILE
+
+        car bean has:
+
+        scope="prototype"
+
+        Meaning:
+        - NOT created during container startup.
+        - Created only when requested via getBean().
+        - NOT stored in singleton cache.
+        - Spring does NOT manage its destruction.
+
+
+        4) LIFECYCLE ORDER DURING STARTUP
+
+        Step 1: Load BeanDefinitions
+        Step 2: Resolve ${...} placeholders
+        Step 3: Instantiate singleton beans
+        Step 4: Perform constructor injection
+        Step 5: Perform setter injection
+        Step 6: Store fully initialized singletons
+
+
+        5) DEPENDENCY GRAPH RESOLUTION
+
+        Spring resolves dependencies in topological order.
+
+        Example:
+        car depends on:
+        - festivalDiscount
+        - petrolEngine
+
+        So Spring ensures those beans exist before injecting.
+
+
+        6) MEMORY MODEL SUMMARY
+
+        beanDefinitionMap → stores metadata only.
+        singletonObjects → stores actual singleton instances.
+        prototype beans → created and returned immediately, not cached.
+
+
+        7) SCOPE COMPARISON
+
+        singleton:
+        - One instance per container
+        - Shared across all requests
+        - Created eagerly (by default)
+
+        prototype:
+        - New instance per getBean()
+        - Not managed after creation
+        - Not stored in container cache
+
+
+        ====================================================================================
+        -->

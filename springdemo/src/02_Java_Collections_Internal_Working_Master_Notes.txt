@@ -1,0 +1,359 @@
+==============================
+JAVA COLLECTIONS + INTERNALS
+DETAILED REVISION NOTES
+==============================
+
+------------------------------------------------------------
+1. COLLECTION vs COLLECTIONS
+------------------------------------------------------------
+
+Collection:
+- Root interface of Java Collection Framework.
+- Extends Iterable.
+- Defines common operations like add(), remove(), size(), contains().
+- Parent of List, Set, Queue.
+- Does NOT include Map.
+
+Collections:
+- Utility class.
+- Contains static helper methods.
+- Examples:
+  Collections.sort(list)
+  Collections.reverse(list)
+  Collections.min(list)
+- Provides synchronized wrappers and unmodifiable wrappers.
+
+------------------------------------------------------------
+2. LIST vs SET vs MAP
+------------------------------------------------------------
+
+List:
+- Ordered.
+- Allows duplicates.
+- Index based.
+- Implementations: ArrayList, LinkedList.
+
+Set:
+- No duplicates.
+- Uses equals() and hashCode() to ensure uniqueness.
+- Not index based.
+- Implementations: HashSet, TreeSet.
+
+Map:
+- Key-Value structure.
+- Keys must be unique.
+- Values can be duplicate.
+- Not a subtype of Collection.
+- Implementations: HashMap, TreeMap.
+
+------------------------------------------------------------
+3. ARRAYLIST INTERNAL WORKING
+------------------------------------------------------------
+
+Internal Structure:
+- Backed by Object[] array.
+- Has fields:
+  Object[] elementData
+  int size
+
+Default Capacity:
+- 10 (after first insertion).
+
+Resizing Formula:
+- newCapacity = oldCapacity + (oldCapacity >> 1)
+- Approximately 1.5x growth.
+
+Time Complexity:
+- get(index) = O(1)
+- add(end) = O(1) amortized
+- add(middle) = O(n)
+- remove(middle) = O(n)
+
+Reason for O(n):
+- Elements must shift.
+
+Best Use Case:
+- Frequent read operations.
+- Less middle insert/delete.
+
+------------------------------------------------------------
+4. LINKEDLIST INTERNAL WORKING
+------------------------------------------------------------
+
+Structure:
+- Doubly linked list.
+- Each node contains:
+  item
+  next
+  prev
+
+Node structure:
+class Node<E> {
+    E item;
+    Node<E> next;
+    Node<E> prev;
+}
+
+Time Complexity:
+- get(index) = O(n)
+- add/remove head = O(1)
+- add/remove middle = O(n)
+
+Disadvantage:
+- Poor CPU cache locality.
+- Slower than ArrayList in most real cases.
+
+------------------------------------------------------------
+5. HASHMAP INTERNAL WORKING
+------------------------------------------------------------
+
+Core Structure:
+- Node<K,V>[] table
+- Array of buckets.
+
+Each bucket contains:
+- LinkedList (before Java 8)
+- LinkedList + Red-Black Tree (Java 8+)
+
+Hash Calculation:
+int h = key.hashCode();
+int hash = h ^ (h >>> 16);  // Bit spreading
+int index = hash & (capacity - 1);
+
+Capacity:
+- Always power of 2.
+- Default = 16.
+
+Load Factor:
+- Default = 0.75
+
+Resize Trigger:
+- size > capacity * loadFactor
+
+Example:
+16 * 0.75 = 12
+If size > 12 → resize to 32.
+
+Collision Handling:
+- If multiple keys map to same index.
+- Stored in linked list.
+- If bucket size > 8 → converted to Red-Black Tree.
+- If bucket size falls below 6 → converted back to linked list.
+
+Time Complexity:
+- get() = O(1) average
+- put() = O(1) average
+- Worst case = O(log n) (after treeification)
+
+------------------------------------------------------------
+6. HASH COLLISION EXAMPLE (Aa and BB)
+------------------------------------------------------------
+
+String hash formula:
+hash = s[0]*31^(n-1) + s[1]*31^(n-2) + ...
+
+For 2 characters:
+hash = firstChar * 31 + secondChar
+
+"Aa":
+'A' = 65
+'a' = 97
+hash = 65*31 + 97 = 2112
+
+"BB":
+'B' = 66
+hash = 66*31 + 66 = 2112
+
+Both produce same hash = 2112
+
+Bucket index:
+index = hash & (capacity - 1)
+
+If capacity = 16:
+capacity - 1 = 15
+index = 2112 & 15
+
+15 in binary = 00001111
+2112 in binary ends with 0000
+Result = 0
+
+Both keys go to bucket 0.
+
+HashMap resolves collision using:
+1. Compare hash
+2. Compare equals()
+
+equals() ensures correct key match.
+
+------------------------------------------------------------
+7. equals() and hashCode() CONTRACT
+------------------------------------------------------------
+
+Rule:
+If a.equals(b) == true
+Then a.hashCode() must equal b.hashCode()
+
+If violated:
+- HashMap breaks.
+- Duplicate keys possible.
+- Retrieval may fail.
+
+Always override both together.
+
+------------------------------------------------------------
+8. WHY HASHMAP IS NOT THREAD SAFE
+------------------------------------------------------------
+
+Reasons:
+- No synchronization.
+- Multiple threads may modify bucket simultaneously.
+- Resize operation may corrupt structure.
+- Can cause infinite loops (pre Java 8).
+
+Solution:
+- Use ConcurrentHashMap.
+
+------------------------------------------------------------
+9. HASHMAP vs HASHTABLE vs CONCURRENTHASHMAP
+------------------------------------------------------------
+
+HashMap:
+- Not thread safe.
+- Allows one null key.
+- Fast.
+
+Hashtable:
+- Thread safe.
+- Entire map synchronized.
+- Slow.
+- Legacy class.
+
+ConcurrentHashMap:
+- Thread safe.
+- Fine-grained locking or CAS (Java 8+).
+- No null key.
+- High performance.
+
+------------------------------------------------------------
+10. TREEMAP INTERNAL WORKING
+------------------------------------------------------------
+
+Based on:
+- Red-Black Tree (self-balancing BST).
+
+Node Structure:
+Entry<K,V> {
+    K key
+    V value
+    Entry left
+    Entry right
+    Entry parent
+    boolean color
+}
+
+Properties:
+- Root is black.
+- No two red nodes adjacent.
+- Equal number of black nodes in all root-to-leaf paths.
+
+Time Complexity:
+- get() = O(log n)
+- put() = O(log n)
+- remove() = O(log n)
+
+Features:
+- Keys sorted.
+- No null key allowed.
+- Keys must implement Comparable or use Comparator.
+
+Use Case:
+- When sorted order needed.
+- Range queries.
+- floorKey(), ceilingKey() operations.
+
+------------------------------------------------------------
+11. ITERATORS
+------------------------------------------------------------
+
+Iterator Interface Methods:
+- hasNext()
+- next()
+- remove()
+
+Purpose:
+- Traverse collection without exposing internal structure.
+
+Internal Mechanism (ArrayList example):
+Iterator stores:
+- cursor (current index)
+- lastRet (last returned index)
+- expectedModCount
+
+modCount:
+- Tracks structural modification.
+- Incremented on add(), remove(), clear().
+
+Fail-Fast Mechanism:
+- If modCount != expectedModCount
+- Throws ConcurrentModificationException.
+
+Example of unsafe modification:
+for(String s : list) {
+    list.add("X");   // Throws exception
+}
+
+Safe removal:
+Iterator<String> it = list.iterator();
+while(it.hasNext()) {
+    if(condition)
+        it.remove();
+}
+
+Because iterator.remove() updates both modCount and expectedModCount.
+
+------------------------------------------------------------
+12. FAIL-FAST vs FAIL-SAFE
+------------------------------------------------------------
+
+Fail-Fast:
+- Throws exception on modification.
+- Examples: ArrayList, HashMap.
+
+Fail-Safe:
+- Iterates over copy.
+- No exception.
+- Examples: ConcurrentHashMap, CopyOnWriteArrayList.
+- Extra memory overhead.
+
+------------------------------------------------------------
+FINAL CORE UNDERSTANDING
+------------------------------------------------------------
+
+ArrayList:
+- Dynamic array.
+- Fast random access.
+
+LinkedList:
+- Doubly linked structure.
+- Slow random access.
+
+HashMap:
+- Array + bucket.
+- Uses hashCode() and equals().
+- O(1) average.
+
+TreeMap:
+- Red-Black Tree.
+- Sorted.
+- O(log n).
+
+Iterators:
+- Controlled traversal.
+- Fail-fast using modCount.
+- Protect against unsafe modification.
+
+Master these internals and you understand 80% of backend data structure mechanics in Java.
+
+==============================
+END OF NOTES
+==============================

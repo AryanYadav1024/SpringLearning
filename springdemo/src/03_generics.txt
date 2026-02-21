@@ -1,0 +1,317 @@
+===============================
+JAVA GENERICS & CUSTOM ARRAYLIST NOTES
+===============================
+
+----------------------------------------
+1) CUSTOM GENERIC ARRAY LIST IMPLEMENTATION
+----------------------------------------
+
+Basic Structure:
+
+interface arrClist<T> {
+    void add(T number);
+}
+
+class arrList<T> implements arrClist<T> {
+
+    private Object[] data;
+    private int size = 0;
+
+    public arrList() {
+        data = new Object[10];
+    }
+
+    public void add(T number) {
+        if (size == data.length) {
+            resize();
+        }
+        data[size++] = number;
+    }
+
+    public T remove() {
+        if (size == 0) {
+            throw new RuntimeException("Empty list");
+        }
+        T removed = (T) data[--size];
+        data[size] = null; // avoid memory leak
+        return removed;
+    }
+
+    public void set(int index, T number) {
+        data[index] = number;
+    }
+
+    private void resize() {
+        Object[] temp = new Object[data.length * 2];
+        for (int i = 0; i < size; i++) {
+            temp[i] = data[i];
+        }
+        data = temp;
+    }
+}
+
+KEY CONCEPTS:
+- Uses Object[] because generics cannot create new T[]
+- Resize doubles current capacity
+- remove() must null out reference to prevent memory leaks
+- Generics provide compile-time safety only
+
+
+----------------------------------------
+2) GENERICS BASICS
+----------------------------------------
+
+Definition:
+Generics allow classes, interfaces, and methods to operate on types specified at compile time.
+
+Example:
+class Box<T> {
+    T value;
+}
+
+When using:
+Box<String> box = new Box<>();
+
+T becomes String at compile time.
+
+
+----------------------------------------
+3) RAW TYPES
+----------------------------------------
+
+Raw type = using generic class without specifying type parameter.
+
+Example:
+arrList list = new arrList();   // raw type
+
+Problem:
+- Disables type safety
+- Can cause ClassCastException at runtime
+- Should be avoided in modern Java
+
+
+----------------------------------------
+4) TYPE ERASURE
+----------------------------------------
+
+Java generics use TYPE ERASURE.
+
+This means:
+- Generic type information exists only at compile time.
+- At runtime, T is replaced with Object (or its bound).
+
+Example:
+
+class arrList<T> becomes:
+
+class arrList {
+    private Object[] data;
+}
+
+So there is no separate:
+arrList<Integer>
+arrList<String>
+
+Only one class exists at runtime.
+
+
+----------------------------------------
+5) HOW TYPE SAFETY WORKS
+----------------------------------------
+
+Compile-time:
+Compiler ensures only correct types are inserted.
+
+Example:
+arrList<Integer> list = new arrList<>();
+list.add(10);      // OK
+list.add("Hello"); // Compile-time error
+
+Runtime:
+Compiler inserts cast automatically when retrieving:
+
+Integer x = list.remove();
+
+Actually becomes:
+
+Integer x = (Integer) list.remove();
+
+If raw types are used improperly:
+ClassCastException can occur.
+
+
+----------------------------------------
+6) WHY "new T()" IS ILLEGAL
+----------------------------------------
+
+You cannot write:
+
+T obj = new T();
+T[] arr = new T[10];
+
+Reason:
+At runtime, T does not exist.
+It has been erased to Object.
+
+JVM does not know:
+- Which constructor to call
+- What size to allocate
+- What exact type T is
+
+Solution if instantiation is required:
+
+class MyClass<T> {
+    private Class<T> type;
+
+    MyClass(Class<T> type) {
+        this.type = type;
+    }
+
+    public T create() throws Exception {
+        return type.getDeclaredConstructor().newInstance();
+    }
+}
+
+
+----------------------------------------
+7) BOUNDED GENERICS (UPPER BOUND)
+----------------------------------------
+
+Definition:
+Restricts what type T can be.
+
+Syntax:
+class Box<T extends Number> { }
+
+Meaning:
+T must be Number or subclass of Number.
+
+Allowed:
+Box<Integer>
+Box<Double>
+
+Not allowed:
+Box<String>
+
+Why needed?
+To ensure certain methods exist.
+
+Example:
+class Calculator<T extends Number> {
+    double add(T a, T b) {
+        return a.doubleValue() + b.doubleValue();
+    }
+}
+
+Compiler now knows doubleValue() exists.
+
+
+----------------------------------------
+8) MULTIPLE BOUNDS
+----------------------------------------
+
+class Example<T extends Number & Comparable<T>> { }
+
+Rules:
+- First must be a class
+- Others must be interfaces
+
+
+----------------------------------------
+9) WILDCARDS
+----------------------------------------
+
+Upper bounded wildcard:
+List<? extends Number>
+
+Meaning:
+List of Number OR subclass of Number.
+
+Used when reading values.
+
+Lower bounded wildcard:
+List<? super Integer>
+
+Meaning:
+List of Integer OR its parent types.
+
+Used when writing values.
+
+
+----------------------------------------
+10) PECS RULE
+----------------------------------------
+
+Producer Extends
+Consumer Super
+
+If data is coming OUT → use extends
+If data is going IN → use super
+
+
+----------------------------------------
+11) WHY GENERICS DO NOT SUPPORT PRIMITIVES
+----------------------------------------
+
+Generics work only with reference types.
+
+int cannot be used directly.
+
+Instead:
+Integer is used (autoboxing).
+
+Reason:
+Generics are implemented using Object.
+Primitives are not Objects.
+
+
+----------------------------------------
+12) COMPILE-TIME VS RUNTIME
+----------------------------------------
+
+Generics are compile-time feature.
+
+Runtime:
+- Only Object exists
+- Casts are inserted automatically
+- No real generic type information remains
+
+Compiler = bodyguard
+Runtime = trusts compiler
+
+
+----------------------------------------
+13) IMPORTANT LIMITATIONS DUE TO TYPE ERASURE
+----------------------------------------
+
+Cannot do:
+- new T()
+- new T[]
+- T.class
+- instanceof T
+- List<String> instanceof List<Integer>
+
+Because generic type information is erased.
+
+
+----------------------------------------
+14) BIG PICTURE
+----------------------------------------
+
+Generics provide:
+- Compile-time type safety
+- Cleaner APIs
+- Fewer runtime ClassCastExceptions
+- Stronger contracts via bounded types
+
+But:
+- No runtime specialization
+- No primitive support
+- No direct instantiation of T
+
+Design decision made for backward compatibility.
+
+
+===============================
+END OF NOTES
+===============================

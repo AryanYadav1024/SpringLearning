@@ -1,0 +1,362 @@
+===============================
+Java_Multithreading_Deep_Notes_v1.txt
+===============================
+
+Author: Aryan
+Topic: Java Multithreading – Deep Internal Understanding
+Level: JVM + CPU Awareness
+
+------------------------------------------------------------
+1) What is a Thread?
+------------------------------------------------------------
+
+A thread is the smallest unit of execution inside a process.
+
+When a Java program starts:
+- The JVM creates the "main thread".
+- Any additional threads are created explicitly.
+
+Thread creation:
+
+class MyThread extends Thread {
+    public void run() {
+        // task
+    }
+}
+
+new MyThread().start();
+
+Important:
+- start() → creates a new OS-level thread and calls run().
+- run() directly → normal method call (no multithreading).
+
+Threads are scheduled by the OS, not the JVM.
+
+------------------------------------------------------------
+2) Runnable Interface
+------------------------------------------------------------
+
+Better practice than extending Thread.
+
+class MyTask implements Runnable {
+    public void run() {
+        // task
+    }
+}
+
+Thread t = new Thread(new MyTask());
+t.start();
+
+Why Runnable is better:
+- Separates task from thread.
+- Allows extending another class.
+- Cleaner design.
+
+Concept:
+Runnable = job
+Thread = worker
+
+------------------------------------------------------------
+3) Thread Lifecycle
+------------------------------------------------------------
+
+States:
+1. NEW
+2. RUNNABLE
+3. RUNNING
+4. BLOCKED
+5. WAITING
+6. TIMED_WAITING
+7. TERMINATED
+
+Important:
+- RUNNABLE means ready to run (may or may not be running).
+- Scheduling is OS-dependent.
+
+------------------------------------------------------------
+4) Stack vs Heap in Multithreading
+------------------------------------------------------------
+
+Each thread has:
+- Its own stack (local variables, method calls)
+- Shared heap (objects)
+
+Race conditions only occur when:
+- Multiple threads modify shared heap data.
+
+Local variables inside methods are thread-safe.
+
+------------------------------------------------------------
+5) Race Condition
+------------------------------------------------------------
+
+Occurs when:
+- Multiple threads access shared data
+- At least one modifies it
+- No proper synchronization
+
+Example:
+
+int count = 0;
+
+count++;
+
+count++ is NOT atomic.
+
+It breaks into:
+1. Read
+2. Add
+3. Write
+
+Two threads can read the same value and overwrite each other.
+
+This causes lost updates.
+
+------------------------------------------------------------
+6) Visibility vs Atomicity
+------------------------------------------------------------
+
+Visibility:
+- When one thread changes a variable,
+  other threads can see the updated value.
+
+Atomicity:
+- Operation happens as one indivisible step.
+
+Mutual Exclusion:
+- Only one thread executes critical section at a time.
+
+------------------------------------------------------------
+7) synchronized Keyword
+------------------------------------------------------------
+
+Every object in Java has an internal monitor (lock).
+It exists in the object header (Mark Word).
+
+BUT:
+The monitor does nothing unless used.
+
+synchronized activates the monitor.
+
+Example:
+
+synchronized(this) {
+    count++;
+}
+
+What synchronized guarantees:
+1. Mutual exclusion (only one thread inside)
+2. Visibility (flushes memory)
+
+Under the hood:
+Compiler inserts:
+- monitorenter
+- monitorexit
+
+Without synchronized:
+- Lock is never acquired.
+- Threads interleave freely.
+
+------------------------------------------------------------
+8) Deadlock
+------------------------------------------------------------
+
+Deadlock occurs when:
+- Thread A holds Lock 1 and waits for Lock 2
+- Thread B holds Lock 2 and waits for Lock 1
+
+Both wait forever.
+
+Avoid by:
+- Always locking in consistent order.
+- Avoid nested locks.
+- Use tryLock() where possible.
+
+------------------------------------------------------------
+9) volatile Keyword
+------------------------------------------------------------
+
+volatile guarantees:
+- Visibility
+- No caching of variable
+
+Example:
+
+volatile boolean running = true;
+
+When one thread changes it,
+other threads see it immediately.
+
+But:
+volatile does NOT guarantee atomicity.
+
+Example:
+
+volatile int count;
+count++;
+
+Still unsafe.
+
+Because ++ is 3 steps.
+
+------------------------------------------------------------
+10) Why Seeing Same Value is Not Enough
+------------------------------------------------------------
+
+Even if all threads see same value,
+modification is still unsafe.
+
+Example:
+
+count = 0
+
+Thread A reads 0
+Thread B reads 0
+
+Thread A writes 1
+Thread B writes 1
+
+Final value = 1
+Expected = 2
+
+Problem is interleaving of operations,
+not visibility.
+
+------------------------------------------------------------
+11) ExecutorService
+------------------------------------------------------------
+
+Modern way to manage threads.
+
+ExecutorService executor =
+    Executors.newFixedThreadPool(3);
+
+executor.submit(() -> {
+    // task
+});
+
+executor.shutdown();
+
+Why use it:
+- Thread reuse
+- Better resource management
+- Clean abstraction
+
+------------------------------------------------------------
+12) Thread Pools
+------------------------------------------------------------
+
+Creating threads is expensive.
+
+Thread pool:
+- Pre-creates threads
+- Reuses them
+
+Types:
+- FixedThreadPool
+- CachedThreadPool
+- SingleThreadExecutor
+- ScheduledThreadPool
+
+Benefits:
+- Reduced overhead
+- Controlled concurrency
+- Prevents thread explosion
+
+------------------------------------------------------------
+13) Callable vs Runnable
+------------------------------------------------------------
+
+Runnable:
+- void run()
+- No return value
+- No checked exception
+
+Callable:
+- V call() throws Exception
+- Returns result
+- Can throw checked exception
+
+Used with ExecutorService.
+
+------------------------------------------------------------
+14) Future
+------------------------------------------------------------
+
+Represents result of asynchronous computation.
+
+Future<Integer> future =
+    executor.submit(() -> 42);
+
+future.get(); // blocks until result ready
+
+Methods:
+- get()
+- isDone()
+- cancel()
+
+Future.get() blocks thread.
+
+------------------------------------------------------------
+15) CAS (Compare And Swap)
+------------------------------------------------------------
+
+Used by Atomic classes.
+
+AtomicInteger count = new AtomicInteger(0);
+count.incrementAndGet();
+
+CAS logic:
+1. Read value
+2. Compute new value
+3. Update only if original value unchanged
+4. If changed → retry
+
+Lock-free but thread-safe.
+
+Used in high-performance systems.
+
+------------------------------------------------------------
+16) Java Memory Model (High-Level Idea)
+------------------------------------------------------------
+
+Threads may:
+- Cache variables
+- Reorder instructions
+
+Without synchronization:
+- No guarantee of visibility
+- No guarantee of execution order
+
+synchronized establishes:
+Happens-before relationship.
+
+Meaning:
+All writes before unlocking
+are visible to thread after locking.
+
+------------------------------------------------------------
+17) Critical Insight
+------------------------------------------------------------
+
+Concurrency problems occur because:
+
+- Operations are not atomic.
+- Instructions interleave.
+- CPUs reorder.
+- Memory visibility is not guaranteed.
+- Shared mutable state is dangerous.
+
+Best practice:
+Minimize shared mutable state.
+
+------------------------------------------------------------
+END OF NOTES
+------------------------------------------------------------
+
+Revision Reminder:
+Focus especially on:
+- Visibility vs Atomicity
+- How count++ works internally
+- Why synchronized is needed despite monitor existing
+- How CAS differs from locking

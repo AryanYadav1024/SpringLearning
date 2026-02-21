@@ -1,0 +1,638 @@
+=============================
+JAVA INTERNALS MASTER NOTES
+=============================
+
+--------------------------------------------------
+1) JDK vs JRE vs JVM
+--------------------------------------------------
+
+JVM (Java Virtual Machine)
+- Executes bytecode (.class files).
+- Platform specific (different JVM for Windows, Linux, macOS).
+- Handles:
+  * Bytecode execution
+  * Memory management
+  * Garbage collection
+  * Class loading
+- Written mostly in C/C++.
+
+JRE (Java Runtime Environment)
+- JVM + core Java libraries.
+- Required to RUN Java programs.
+- Contains:
+  * JVM
+  * Standard libraries (java.lang, java.util, etc.)
+- Does NOT contain compiler.
+
+JDK (Java Development Kit)
+- JRE + development tools.
+- Required to DEVELOP Java programs.
+- Contains:
+  * javac (compiler)
+  * debugger
+  * javadoc
+  * other dev tools
+
+Relationship:
+JDK = JRE + Development Tools
+JRE = JVM + Core Libraries
+
+
+--------------------------------------------------
+2) Java Compilation Process
+--------------------------------------------------
+
+Step 1: Write source code (.java file)
+
+Step 2: Compile using javac
+    javac Hello.java
+
+Compiler does:
+- Syntax checking
+- Type checking
+- Converts source code to Bytecode (.class file)
+
+Step 3: Execution
+    java Hello
+
+JVM:
+- Loads .class file
+- Verifies bytecode
+- Interprets or JIT-compiles into native machine code
+
+Important:
+Java is BOTH compiled and interpreted.
+Compiled to bytecode.
+Interpreted/JIT compiled at runtime.
+
+
+--------------------------------------------------
+3) ClassLoader Hierarchy
+--------------------------------------------------
+
+Purpose:
+Loads classes into JVM memory at runtime.
+
+Three main ClassLoaders:
+
+1) Bootstrap ClassLoader
+- Loads core Java classes.
+- Examples:
+  java.lang.Object
+  java.lang.String
+- Implemented in native code.
+- Has no parent.
+
+2) Platform (Extension) ClassLoader
+- Loads platform modules.
+- Handles non-core but standard Java APIs.
+
+3) Application ClassLoader
+- Loads user-defined classes.
+- Loads classes from classpath.
+
+Parent Delegation Model:
+When a class is requested:
+Application -> Platform -> Bootstrap
+
+Child asks parent first.
+Prevents:
+- Overriding core classes
+- Security issues
+- Duplicate class loading
+
+You cannot override java.lang.String because Bootstrap loads it first.
+
+
+--------------------------------------------------
+4) Stack vs Heap Memory
+--------------------------------------------------
+
+Stack Memory:
+- Thread specific.
+- Stores:
+  * Local variables
+  * Method calls
+  * References to objects
+- Fast access.
+- Automatically freed after method completes.
+- LIFO structure.
+
+Example:
+int x = 10;   (stored in stack)
+
+Heap Memory:
+- Shared among all threads.
+- Stores:
+  * Objects
+  * Instance variables
+- Slower than stack.
+- Managed by Garbage Collector.
+
+Example:
+Student s = new Student();
+Object is created in heap.
+Reference s is stored in stack.
+
+Important:
+Stack stores references.
+Heap stores actual objects.
+
+
+--------------------------------------------------
+5) Object Lifecycle
+--------------------------------------------------
+
+1) Creation
+   - Using "new" keyword.
+   - Memory allocated in heap.
+
+2) In Use
+   - Object is reachable through references.
+
+3) Eligible for Garbage Collection
+   - No active references.
+   - Example:
+     s = null;
+
+4) Garbage Collected
+   - Memory reclaimed by GC.
+
+Java objects are not destroyed manually.
+They become unreachable.
+
+
+--------------------------------------------------
+6) Garbage Collection Basics
+--------------------------------------------------
+
+Purpose:
+Automatically frees memory of unreachable objects.
+
+Heap Generations:
+
+1) Young Generation
+   - Eden Space
+   - Survivor Spaces (S0, S1)
+   - Most objects die here.
+
+2) Old Generation
+   - Long-living objects.
+
+Basic GC Process:
+- Mark reachable objects.
+- Delete unreachable objects.
+- Compact memory (optional).
+
+Important:
+GC timing is NOT guaranteed.
+System.gc() is only a request.
+
+
+--------------------------------------------------
+7) Why Java is Platform Independent
+--------------------------------------------------
+
+Reason:
+Java compiles to BYTECODE, not machine code.
+
+Flow:
+Source Code -> Bytecode -> JVM -> Native Machine Code
+
+Bytecode is platform neutral.
+JVM translates bytecode for specific OS.
+
+Java is platform independent.
+JVM is platform dependent.
+
+This enables:
+Write Once, Run Anywhere (WORA)
+
+
+--------------------------------------------------
+8) Object Cloning
+--------------------------------------------------
+
+Definition:
+Cloning creates a duplicate object with same state.
+
+clone() method:
+Defined in Object class:
+protected Object clone()
+
+To allow cloning:
+Class must implement Cloneable interface.
+
+Cloneable:
+- Marker interface.
+- Has no methods.
+- Signals JVM that cloning is allowed.
+
+If not implemented:
+CloneNotSupportedException is thrown.
+
+
+--------------------------------------------------
+9) Shallow Copy vs Deep Copy
+--------------------------------------------------
+
+Shallow Copy:
+- Copies primitive values.
+- Copies references (not actual objects).
+- Default behavior of super.clone().
+
+Deep Copy:
+- Copies primitives.
+- Creates new objects for referenced fields.
+- Must be implemented manually.
+
+Example deep clone:
+
+@Override
+public Object clone() throws CloneNotSupportedException {
+    Human twin = (Human) super.clone();
+    twin.arr = this.arr.clone();
+    return twin;
+}
+
+Important:
+Constructors are NOT called during cloning.
+
+
+--------------------------------------------------
+10) Copy Constructor vs clone()
+--------------------------------------------------
+
+Copy Constructor:
+
+Human(Human other) {
+    this.name = other.name;
+    this.age = other.age;
+    this.arr = other.arr.clone();
+}
+
+Advantages:
+- Clear
+- Safe
+- No checked exception
+- Preferred in modern Java
+
+clone():
+- Legacy mechanism
+- Memory-level copy
+- More error-prone
+
+Modern best practice:
+Prefer copy constructors over clone().
+
+
+--------------------------------------------------
+CORE PRINCIPLES SUMMARY
+--------------------------------------------------
+
+1) JDK > JRE > JVM hierarchy.
+2) Java compiles to bytecode.
+3) Stack stores references, Heap stores objects.
+4) GC frees unreachable objects.
+5) Platform independence comes from bytecode + JVM.
+6) super.clone() performs shallow copy.
+7) Constructors are NOT called in cloning.
+8) Cloneable is permission, not functionality.
+
+
+=============================
+JAVA CORE – COMPLETE REVISION NOTES
+=============================
+
+
+-------------------------------------------------
+1. OOPS IN JAVA
+-------------------------------------------------
+
+OOPS = Object Oriented Programming System.
+Core idea: Model real world entities using objects and classes.
+
+Class:
+Blueprint/template. Defines properties (fields) and behavior (methods).
+
+Object:
+Instance of a class. Stored in heap memory.
+
+Encapsulation:
+Wrapping data + methods together.
+Achieved using private variables + public getters/setters.
+Purpose: Data hiding and controlled access.
+
+Abstraction:
+Hiding implementation details.
+Achieved via abstract classes and interfaces.
+
+Inheritance:
+Acquiring properties from parent class using extends.
+Creates IS-A relationship.
+Enables code reuse.
+
+Polymorphism:
+One interface, multiple implementations.
+Compile-time → Method Overloading.
+Runtime → Method Overriding.
+
+Overriding rules:
+- Same method signature
+- Cannot reduce visibility
+- Cannot throw broader checked exception
+- Must follow Liskov Substitution Principle
+
+
+-------------------------------------------------
+2. CLONING
+-------------------------------------------------
+
+Cloneable is a marker interface.
+If not implemented, clone() throws CloneNotSupportedException.
+
+Shallow Copy:
+Copies object fields but references remain same.
+
+Deep Copy:
+Copies actual objects recursively.
+
+clone() is protected in Object class.
+Must override it and make it public.
+
+
+-------------------------------------------------
+3. GENERICS
+-------------------------------------------------
+
+Generics provide type safety at compile time.
+
+Example:
+class Box<T> { T value; }
+
+T is a type parameter.
+
+Why we cannot instantiate generics?
+Due to type erasure.
+At runtime T is removed.
+So:
+T obj = new T();  // illegal
+
+Bounded Generics:
+<T extends Number>
+Restricts T to subclasses of Number.
+
+Type Erasure:
+At compile time generic types are replaced by Object or bound.
+Runtime does NOT know actual generic type.
+
+No generic arrays:
+new T[10] → illegal
+
+Wildcards:
+? → unknown type
+? extends T → upper bound
+? super T → lower bound
+
+
+-------------------------------------------------
+4. COLLECTIONS FRAMEWORK
+-------------------------------------------------
+
+Collection:
+Interface (List, Set, Queue extend it)
+
+Collections:
+Utility class (sort(), reverse(), etc)
+
+List:
+Ordered, allows duplicates.
+
+Set:
+No duplicates.
+
+Map:
+Key-value pairs. Keys unique.
+
+
+-------------------------------------------------
+5. ARRAYLIST INTERNALS
+-------------------------------------------------
+
+Backed by dynamic array.
+Default capacity = 10.
+Grows by 1.5x when full.
+
+Access: O(1)
+Insert middle: O(n)
+Remove: O(n)
+
+
+-------------------------------------------------
+6. HASHMAP INTERNALS
+-------------------------------------------------
+
+Default capacity = 16
+Load factor = 0.75
+
+Index formula:
+index = (n - 1) & hash
+
+Where n = capacity (always power of 2)
+
+Why power of 2?
+Because (n-1) & hash is faster than modulo.
+
+Collision:
+When two keys map to same bucket.
+
+Example:
+"Aa".hashCode() == "BB".hashCode()
+
+Bucket Structure:
+Java 8+
+If bucket size < 8 → LinkedList
+If bucket size >= 8 → Tree (Red-Black Tree)
+If size drops below 6 → back to LinkedList
+
+Put process:
+1. Compute hash
+2. Compute index
+3. If empty → insert
+4. If collision → compare hash + equals
+5. Replace or append
+
+Time complexity:
+Average → O(1)
+Worst → O(log n) (treeified)
+
+
+-------------------------------------------------
+7. TREEMAP
+-------------------------------------------------
+
+Implements NavigableMap.
+Backed by Red-Black Tree.
+
+Sorted order of keys.
+Time complexity:
+Put → O(log n)
+Get → O(log n)
+
+Cannot have null key.
+
+
+-------------------------------------------------
+8. ITERATORS
+-------------------------------------------------
+
+Iterator:
+Used to traverse collections.
+
+Methods:
+hasNext()
+next()
+remove()
+
+Fail-fast:
+If structure modified during iteration → ConcurrentModificationException.
+
+ListIterator:
+Can traverse forward and backward.
+
+
+-------------------------------------------------
+9. EXCEPTION HANDLING
+-------------------------------------------------
+
+Throwable
+  → Error
+  → Exception
+      → Checked
+      → Unchecked (RuntimeException)
+
+Checked:
+Must handle or declare.
+
+Unchecked:
+Compiler does not force.
+
+throw:
+Actually throws exception object.
+
+throws:
+Declares possible exception in method signature.
+
+Best practice:
+Throw specific exceptions.
+Avoid throwing raw Exception.
+
+
+-------------------------------------------------
+10. GARBAGE COLLECTION
+-------------------------------------------------
+
+Stack:
+Stores local variables + method calls.
+
+Heap:
+Stores objects.
+
+Object lifecycle:
+1. Created in heap
+2. Referenced
+3. Becomes unreachable
+4. GC reclaims memory
+
+GC Types:
+Serial GC
+Parallel GC
+G1 GC (default modern)
+
+Mark and Sweep:
+1. Mark reachable objects
+2. Sweep unreferenced ones
+
+Minor GC:
+Young generation cleanup.
+
+Major GC:
+Old generation cleanup.
+
+System.gc():
+Suggestion, not guarantee.
+
+
+-------------------------------------------------
+11. MULTITHREADING
+-------------------------------------------------
+
+Thread:
+Smallest unit of execution.
+
+Create thread:
+1. Extend Thread class
+2. Implement Runnable
+
+Thread lifecycle:
+NEW
+RUNNABLE
+BLOCKED
+WAITING
+TIMED_WAITING
+TERMINATED
+
+Race Condition:
+Multiple threads modify shared data simultaneously.
+
+Synchronized:
+Uses monitor lock of object.
+Only one thread enters synchronized block at a time.
+
+Every object has intrinsic monitor lock.
+
+Deadlock:
+Thread A waits for B
+Thread B waits for A
+
+volatile:
+Ensures visibility across threads.
+Does NOT guarantee atomicity.
+
+Atomicity:
+Single indivisible operation.
+
+
+-------------------------------------------------
+12. MEMORY MODEL
+-------------------------------------------------
+
+Each thread has:
+- Own stack
+- Own working memory
+
+Heap is shared.
+
+Without volatile:
+Thread may use cached copy.
+
+With volatile:
+Reads from main memory directly.
+
+
+-------------------------------------------------
+13. IMPORTANT INTERVIEW INSIGHTS
+-------------------------------------------------
+
+1. HashMap is not thread-safe.
+2. ConcurrentHashMap uses segment locking (Java 7) and CAS (Java 8+).
+3. TreeMap uses Red-Black tree.
+4. Generics exist only at compile time.
+5. synchronized uses object monitor lock.
+6. Checked exceptions are enforced at compile time.
+7. ArrayList is not synchronized.
+
+
+-------------------------------------------------
+END OF CORE REVISION
+-------------------------------------------------

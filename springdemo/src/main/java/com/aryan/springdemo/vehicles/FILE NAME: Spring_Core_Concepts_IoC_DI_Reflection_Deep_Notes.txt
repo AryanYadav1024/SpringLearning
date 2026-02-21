@@ -1,0 +1,302 @@
+=========================================================
+SPRING CORE CONCEPTS – DEEP UNDERSTANDING NOTES
+=========================================================
+
+---------------------------------------------------------
+1) WHAT HAPPENS BEFORE SPRING? (COMPILATION PHASE)
+---------------------------------------------------------
+
+When we write Java code:
+
+    - vehicle.java
+    - bus.java
+    - car.java
+    - discountService.java
+    - MySpringApp.java
+
+The Java compiler (javac) converts them into:
+
+    - vehicle.class
+    - bus.class
+    - car.class
+    - discountService.class
+    - MySpringApp.class
+
+IMPORTANT:
+
+• Spring is NOT involved in compilation.
+• Compiler only checks:
+    - Type safety
+    - Method existence
+    - Interface implementation
+• No objects are created during compilation.
+
+Compilation Phase = Static Type Checking Only.
+
+---------------------------------------------------------
+2) RUNTIME STARTS (JVM PHASE)
+---------------------------------------------------------
+
+Execution begins at:
+
+    public static void main(String[] args)
+
+JVM loads:
+    MySpringApp.class
+
+Now Spring enters the picture.
+
+Spring is just a library running INSIDE the JVM.
+It does NOT replace JVM.
+It does NOT modify bytecode during compile time.
+
+---------------------------------------------------------
+3) WHAT IS IoC (INVERSION OF CONTROL)?
+---------------------------------------------------------
+
+Normally in Java:
+
+    Bus bus = new Bus("volvo");
+
+You control object creation.
+
+With Spring:
+
+    Spring creates the object.
+    You request it.
+
+Control is inverted.
+
+Definition:
+IoC = The container controls object creation and lifecycle instead of the developer.
+
+In our example:
+
+    ClassPathXmlApplicationContext context =
+        new ClassPathXmlApplicationContext("config.xml");
+
+THIS LINE starts IoC.
+
+At this moment:
+    - Spring reads config.xml
+    - Creates BeanDefinitions
+    - Instantiates beans
+    - Stores them internally
+
+You are no longer responsible for new Bus().
+
+---------------------------------------------------------
+4) WHAT IS DI (DEPENDENCY INJECTION)?
+---------------------------------------------------------
+
+Dependency = An object another object depends on.
+
+Example:
+
+    private discountService discountService;
+
+Bus depends on discountService.
+
+Dependency Injection = Providing required dependencies from outside instead of creating them internally.
+
+Without DI:
+
+    this.discountService = new FestivalDiscount();
+
+With DI:
+    Spring injects the implementation.
+
+Types of DI:
+    1) Constructor Injection (recommended)
+    2) Setter Injection
+    3) Field Injection
+
+In XML:
+
+    <constructor-arg ref="festivalDiscount"/>
+
+Spring does internally:
+
+    FestivalDiscount fd = new FestivalDiscount();
+    Bus bus = new Bus("volvo", fd);
+
+That is DI.
+
+---------------------------------------------------------
+5) HOW FILES CONNECT IN OUR EXAMPLE
+---------------------------------------------------------
+
+MySpringApp
+    -> Starts Spring Container
+
+config.xml
+    -> Defines bean metadata
+
+bus.java
+    -> Concrete implementation
+
+vehicle.java
+    -> Abstraction (interface)
+
+discountService.java
+    -> Dependency abstraction
+
+Spring Container
+    -> Reads XML
+    -> Uses reflection
+    -> Instantiates objects
+    -> Injects dependencies
+    -> Stores in singleton cache
+
+---------------------------------------------------------
+6) WHAT IS REFLECTION?
+---------------------------------------------------------
+
+Reflection = The ability of a Java program to inspect and manipulate its own structure at runtime.
+
+It allows:
+
+    - Loading class using String name
+    - Creating object dynamically
+    - Accessing fields
+    - Invoking methods
+    - Reading annotations
+
+Example:
+
+    Class<?> clazz = Class.forName("com.example.Bus");
+    Constructor<?> constructor = clazz.getConstructor(String.class);
+    Object obj = constructor.newInstance("volvo");
+
+No direct new Bus().
+
+Spring uses reflection to:
+    - Load your classes
+    - Create objects
+    - Inject dependencies
+
+Without reflection, Spring cannot work.
+
+---------------------------------------------------------
+7) HOW SPRING CREATES BEANS INTERNALLY
+---------------------------------------------------------
+
+Step 1: Read config.xml
+
+Step 2: Create BeanDefinition
+    (Stores metadata about class, constructor args, scope)
+
+Step 3: Instantiate bean using reflection
+
+    Class.forName(...)
+    getConstructor(...)
+    newInstance(...)
+
+Step 4: Inject dependencies
+
+Step 5: Store bean in singletonObjects map
+
+Internal structure conceptually:
+
+    Map<String, Object> singletonObjects
+
+When you call:
+
+    context.getBean("myVehicle")
+
+Spring looks inside that map and returns the object.
+
+---------------------------------------------------------
+8) WHERE EXACTLY IoC AND DI HAPPEN
+---------------------------------------------------------
+
+IoC happens:
+    When Spring container takes over object creation.
+    (During ApplicationContext initialization)
+
+DI happens:
+    When Spring injects required dependencies into a bean.
+    (During bean instantiation phase)
+
+---------------------------------------------------------
+9) DOES SPRING MODIFY BYTECODE?
+---------------------------------------------------------
+
+NO (for normal bean creation).
+
+Sequence:
+
+    Compile → JVM loads classes → main() runs →
+    Spring container initializes → Reflection used →
+    Beans created → Dependencies injected
+
+Spring operates completely at runtime.
+
+Exception:
+    Spring AOP may create proxy classes (advanced topic).
+
+---------------------------------------------------------
+10) WHY REFLECTION IS SLOWER
+---------------------------------------------------------
+
+Normal call:
+    Compile-time binding
+    Direct method invocation
+    JIT optimized
+
+Reflection:
+    Method lookup at runtime
+    Access checks
+    Dynamic invocation
+
+Slower, but acceptable during startup.
+
+Spring minimizes reflection overhead using caching.
+
+---------------------------------------------------------
+11) KEY ARCHITECTURAL INSIGHT
+---------------------------------------------------------
+
+Spring =
+
+    Reflection Engine
+    + Dependency Graph Resolver
+    + Object Lifecycle Manager
+    + Configuration Reader
+    + Singleton Cache Manager
+
+You declare WHAT.
+Spring decides HOW and WHEN.
+
+---------------------------------------------------------
+12) CORE PRINCIPLES TO REMEMBER
+---------------------------------------------------------
+
+• Program to interfaces, not implementations.
+• Let container manage object lifecycle.
+• Never create dependencies manually if using DI.
+• IoC reduces tight coupling.
+• DI increases flexibility.
+• Reflection enables framework-level abstraction.
+
+---------------------------------------------------------
+FINAL MENTAL MODEL
+---------------------------------------------------------
+
+Compilation:
+    Java checks types.
+
+Runtime:
+    JVM loads classes.
+
+Spring:
+    Creates and wires objects using reflection.
+
+IoC:
+    Spring controls object lifecycle.
+
+DI:
+    Spring injects dependencies.
+
+Reflection:
+    Mechanism that makes all of this possible.

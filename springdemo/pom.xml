@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    POM = Project Object Model
+    This file tells Maven:
+
+    - What this project is
+    - What it depends on
+    - How to build it
+    - Which plugins to use
+    - Which Java version to use
+
+    Maven reads this file and builds your application.
+-->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+	<!-- Maven POM model version -->
+	<modelVersion>4.0.0</modelVersion>
+
+
+	<!-- ========================================================= -->
+	<!-- PARENT -->
+	<!-- ========================================================= -->
+
+	<!--
+        spring-boot-starter-parent does heavy lifting:
+
+        - Manages dependency versions (no need to specify versions manually)
+        - Configures default plugins
+        - Provides sensible defaults
+        - Handles compatibility between Spring + libraries
+
+        This is called "Dependency Management".
+        Very powerful in large systems.
+    -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.0.2</version>
+		<relativePath/>
+	</parent>
+
+
+	<!-- ========================================================= -->
+	<!-- PROJECT IDENTITY -->
+	<!-- ========================================================= -->
+
+	<!--
+        groupId = organization/company/package root
+        artifactId = project name
+        version = build version
+    -->
+	<groupId>com.aryan</groupId>
+	<artifactId>springdemo</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<!-- SNAPSHOT = development version (not production release) -->
+
+	<name>springdemo</name>
+	<description>Demo project for Spring Boot</description>
+
+
+	<!-- ========================================================= -->
+	<!-- PROJECT METADATA (Optional, mostly for publishing) -->
+	<!-- ========================================================= -->
+
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+
+
+	<!-- ========================================================= -->
+	<!-- PROPERTIES -->
+	<!-- ========================================================= -->
+
+	<!--
+        Central place to define reusable properties.
+
+        java.version tells Spring Boot which Java version to compile with.
+
+        Spring Boot configures:
+        - compiler plugin
+        - source compatibility
+        - target compatibility
+    -->
+	<properties>
+		<java.version>21</java.version>
+	</properties>
+
+
+	<!-- ========================================================= -->
+	<!-- DEPENDENCIES -->
+	<!-- ========================================================= -->
+
+	<!--
+        Dependencies = external libraries your project needs.
+
+        Spring Boot starters are "dependency bundles".
+        They bring multiple libraries automatically.
+    -->
+	<dependencies>
+
+		<!--
+            spring-boot-starter-webmvc
+
+            This includes:
+            - Spring MVC
+            - Embedded Tomcat server
+            - Jackson (JSON)
+            - Validation
+            - Logging
+
+            This makes your app a WEB APPLICATION.
+        -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+
+
+		<!--
+            Testing dependency
+
+            Includes:
+            - JUnit
+            - Mockito
+            - Spring test utilities
+            - MockMvc
+
+            Scope = test
+            Means:
+            - Used only during testing
+            - Not included in final production JAR
+        -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+	</dependencies>
+
+
+	<!-- ========================================================= -->
+	<!-- BUILD CONFIGURATION -->
+	<!-- ========================================================= -->
+
+	<build>
+		<plugins>
+
+			<!--
+                Spring Boot Maven Plugin
+
+                What it does:
+                - Packages app as executable JAR
+                - Embeds Tomcat
+                - Allows: mvn spring-boot:run
+                - Handles repackage phase
+
+                Without this:
+                Your app would not be runnable via:
+                java -jar yourapp.jar
+            -->
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+		</plugins>
+	</build>
+
+</project>
